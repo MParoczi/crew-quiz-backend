@@ -1,0 +1,28 @@
+﻿services:
+  - type: web
+    name: crewquiz-api
+    runtime: docker
+    plan: free
+    region: frankfurt
+    buildCommand: docker build -t crewquiz-api .
+    startCommand: dotnet Backend.dll
+    healthCheckPath: /health
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://+:$PORT
+      - key: DOTNET_RUNNING_IN_CONTAINER
+        value: true
+      - key: DOTNET_USE_POLLING_FILE_WATCHER
+        value: true
+      - key: ConnectionStrings__CrewQuiz
+        sync: false
+      - key: AppSettings__Jwt__Secret
+        sync: false
+      - key: AppSettings__Jwt__Issuer
+        sync: false
+      - key: AppSettings__Jwt__Audience
+        sync: false
+      - key: AppSettings__Cors__AllowedOrigins
+        sync: false
