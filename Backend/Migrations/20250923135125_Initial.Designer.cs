@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace Backend.Migrations
 {
     [DbContext(typeof(CrewQuizContext))]
-    [Migration("20250824202445_AddPreviousGameTables")]
-    partial class AddPreviousGameTables
+    [Migration("20250923135125_Initial")]
+    partial class Initial
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
