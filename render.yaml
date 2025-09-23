@@ -5,7 +5,6 @@
     plan: free
     region: frankfurt
     buildCommand: docker build -t crewquiz-api .
-    startCommand: dotnet Backend.dll
     healthCheckPath: /health
     envVars:
       - key: ASPNETCORE_ENVIRONMENT
