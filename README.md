@@ -10,6 +10,7 @@ A real-time multiplayer quiz application built with .NET 8.0 Web API, featuring 
 - [Architecture](#architecture)
 - [Quick Start](#quick-start)
 - [Configuration](#configuration)
+- [Deployment](#deployment)
 - [API Documentation](#api-documentation)
 - [Real-time Communication](#real-time-communication)
 - [Database Schema](#database-schema)
@@ -276,6 +277,172 @@ CrewQuiz.Tests/
   }
 }
 ```
+
+## Deployment
+
+### Docker Deployment
+
+The application is containerized using Docker and optimized for deployment on cloud platforms like Render.com, Heroku, or any Docker-compatible hosting service.
+
+#### Building the Docker Image
+
+```bash
+# Build the Docker image
+docker build -t crew-quiz-backend .
+
+# Run the container locally (optional)
+docker run -p 8080:8080 \
+  -e ConnectionStrings__CrewQuiz="your-postgres-connection-string" \
+  -e AppSettings__Jwt__Secret="your-secret-key-minimum-32-characters" \
+  crew-quiz-backend
+```
+
+#### Dockerfile Features
+
+- **Multi-stage build**: Optimized for smaller production images
+- **Security**: Runs as non-root user
+- **Production-ready**: Uses official .NET 8.0 runtime
+- **Health checks**: Exposed health endpoint at `/api/health`
+
+### Render.com Deployment
+
+The application includes a `render.yaml` configuration file for easy deployment to Render.com.
+
+#### Prerequisites
+
+1. **PostgreSQL Database**: Create a PostgreSQL database on Render.com
+2. **GitHub Repository**: Your code must be in a GitHub repository
+3. **Environment Variables**: Configure the required environment variables
+
+#### Deployment Steps
+
+1. **Fork or Clone** this repository to your GitHub account
+
+2. **Create a PostgreSQL Database** on Render.com:
+   - Database Name: `crew_quiz`
+   - User: `crew_quiz_user`
+   - Plan: Choose appropriate plan (starter for development)
+
+3. **Create a Web Service** on Render.com:
+   - Connect your GitHub repository
+   - Use the provided `render.yaml` configuration
+   - Or manually configure:
+     - **Environment**: Docker
+     - **Dockerfile Path**: `./Dockerfile`
+     - **Health Check Path**: `/api/health`
+
+4. **Configure Environment Variables**:
+   ```
+   ASPNETCORE_ENVIRONMENT=Production
+   ASPNETCORE_URLS=http://+:8080
+   ConnectionStrings__CrewQuiz=[Auto-filled from database]
+   AppSettings__Environment=Production
+   AppSettings__Cors__AllowedOrigins=https://your-frontend-domain.com
+   AppSettings__Jwt__Secret=[Generate a secure secret]
+   AppSettings__Jwt__ExpirationInMinutes=60
+   AppSettings__Jwt__Issuer=https://your-app.onrender.com
+   AppSettings__Jwt__Audience=https://your-frontend-domain.com
+   AppSettings__SessionCleanup__IntervalHours=6
+   AppSettings__SessionCleanup__SessionTimeoutHours=24
+   ```
+
+5. **Deploy**: Render.com will automatically build and deploy your application
+
+#### render.yaml Configuration
+
+The included `render.yaml` file provides Infrastructure-as-Code deployment configuration:
+
+```yaml
+services:
+  - type: web
+    name: crew-quiz-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /api/health
+    # Database connection and environment variables are configured
+```
+
+### Other Cloud Providers
+
+#### Heroku
+
+```bash
+# Install Heroku CLI and login
+heroku login
+
+# Create a new Heroku app
+heroku create your-app-name
+
+# Add PostgreSQL addon
+heroku addons:create heroku-postgresql:hobby-dev
+
+# Set environment variables
+heroku config:set ASPNETCORE_ENVIRONMENT=Production
+heroku config:set AppSettings__Jwt__Secret="your-secure-secret-key"
+
+# Deploy using Docker
+heroku container:push web
+heroku container:release web
+```
+
+#### Azure Container Instances
+
+```bash
+# Create resource group
+az group create --name crew-quiz-rg --location eastus
+
+# Create container instance
+az container create \
+  --resource-group crew-quiz-rg \
+  --name crew-quiz-backend \
+  --image your-registry/crew-quiz-backend:latest \
+  --dns-name-label crew-quiz-unique \
+  --ports 8080 \
+  --environment-variables \
+    ASPNETCORE_ENVIRONMENT=Production \
+    ConnectionStrings__CrewQuiz="your-connection-string"
+```
+
+### Database Migrations
+
+For production deployment, ensure database migrations are applied:
+
+```bash
+# Using Entity Framework CLI
+dotnet ef database update --project Backend
+
+# Or via code (automatically on startup)
+# The application will apply pending migrations on startup
+```
+
+### Health Monitoring
+
+The application provides a comprehensive health check endpoint at `/api/health` that monitors:
+
+- **Database connectivity**
+- **System resources**
+- **Application components**
+
+Health check response example:
+```json
+{
+  "status": "Healthy",
+  "version": "1.0.0",
+  "environment": "Production",
+  "database": {
+    "status": "Healthy",
+    "connectionCount": 5
+  }
+}
+```
+
+### Security Considerations
+
+- **JWT Secret**: Generate a secure random secret (minimum 32 characters)
+- **CORS**: Configure allowed origins for your frontend domains
+- **Database**: Use connection strings with restricted user permissions
+- **HTTPS**: Ensure HTTPS is enforced in production
+- **Environment Variables**: Never commit secrets to source control
 
 ## API Documentation
 

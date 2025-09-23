@@ -1,0 +1,41 @@
+services:
+  - type: web
+    name: crew-quiz-backend
+    env: docker
+    dockerfilePath: ./Dockerfile
+    plan: starter
+    region: oregon
+    branch: main
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: ASPNETCORE_ENVIRONMENT
+        value: Production
+      - key: ASPNETCORE_URLS
+        value: http://+:8080
+      - key: ConnectionStrings__CrewQuiz
+        fromDatabase:
+          name: crew-quiz-db
+          property: connectionString
+      - key: AppSettings__Environment
+        value: Production
+      - key: AppSettings__Cors__AllowedOrigins
+        value: https://your-frontend-domain.com
+      - key: AppSettings__Jwt__Secret
+        generateValue: true
+      - key: AppSettings__Jwt__ExpirationInMinutes
+        value: 60
+      - key: AppSettings__Jwt__Issuer
+        value: https://crew-quiz-backend.onrender.com
+      - key: AppSettings__Jwt__Audience
+        value: https://your-frontend-domain.com
+      - key: AppSettings__SessionCleanup__IntervalHours
+        value: 6
+      - key: AppSettings__SessionCleanup__SessionTimeoutHours
+        value: 24
+
+databases:
+  - name: crew-quiz-db
+    databaseName: crew_quiz
+    user: crew_quiz_user
+    plan: starter
