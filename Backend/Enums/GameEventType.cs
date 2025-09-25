@@ -9,6 +9,7 @@ public enum GameEventType
     QuestionRobbingIsAllowed,
     QuestionRobbed,
     QuestionAnswered,
+    QuestionAnsweredWrong,
     PlayerJoined,
     PlayerLeft,
     PlayerDisconnected,
