@@ -166,7 +166,7 @@ public class GameFlowService(
         if (currentGame.CurrentGameUsers.Count > 1)
         {
             currentGame = await serviceUtil.SelectNextPlayer(currentGame);
-            var currentUser = currentGame.CurrentGameUsers.First(u => u.IsCurrent)?.User;
+            var currentUser = currentGame.CurrentGameUsers.FirstOrDefault(u => u.IsCurrent)?.User;
             gameFlowDto.Username = currentUser?.Username;
             await serviceUtil.UpdateGameFlow(gameFlowDto, GameEventType.NextPlayerSelected);
         }
