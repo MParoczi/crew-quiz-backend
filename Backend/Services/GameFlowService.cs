@@ -34,6 +34,7 @@ public class GameFlowService(
 
         await unitOfWork.CompleteAsync();
 
+        gameFlowDto.Username = userToAdd.Username;
         await serviceUtil.UpdateGameFlow(gameFlowDto, GameEventType.PlayerJoined);
     }
 
@@ -54,7 +55,9 @@ public class GameFlowService(
         var currentGame = await serviceUtil.GetAndValidateCurrentGame(GameEventType.QuestionSelected, gameFlowDto, GetUserId());
 
         await serviceUtil.SelectNextQuestion(currentGame, gameFlowDto.QuestionId!.Value);
-
+        var currentUser = currentGame.CurrentGameUsers.FirstOrDefault(cgu => cgu.IsCurrent)?.User;
+        
+        gameFlowDto.Username = currentUser?.Username;
         await serviceUtil.UpdateGameFlow(gameFlowDto, GameEventType.QuestionSelected);
     }
 
@@ -62,10 +65,13 @@ public class GameFlowService(
     {
         var currentGame = await serviceUtil.GetAndValidateCurrentGame(GameEventType.AnswerSubmitted, gameFlowDto, GetUserId());
         var currentQuestion = currentGame.CurrentGameQuestions.First(q => q.IsCurrent);
+        var currentUser = currentGame.CurrentGameUsers.FirstOrDefault(cgu => cgu.IsCurrent)?.User;
         await unitOfWork.CurrentGameQuestions.IncludeReferenceAsync(currentQuestion, cgq => cgq.Question);
 
         var question = await unitOfWork.Questions.GetByIdAsync(currentQuestion.QuestionId);
 
+        gameFlowDto.Username = currentUser?.Username;
+        
         if (question != default &&
             string.Equals(question.Answer.RemoveAccents(), gameFlowDto.Answer?.RemoveAccents(), StringComparison.CurrentCultureIgnoreCase))
         {
@@ -87,6 +93,7 @@ public class GameFlowService(
         else if (question != default)
         {
             await serviceUtil.SetQuestionRobbingAllowed(currentGame, currentQuestion);
+            await serviceUtil.UpdateGameFlow(gameFlowDto, GameEventType.QuestionAnsweredWrong);
             await serviceUtil.UpdateGameFlow(gameFlowDto, GameEventType.QuestionRobbingIsAllowed);
         }
     }
@@ -95,9 +102,12 @@ public class GameFlowService(
     {
         var currentGame = await serviceUtil.GetAndValidateCurrentGame(GameEventType.AnswerSubmitted, gameFlowDto, GetUserId());
         var currentQuestion = currentGame.CurrentGameQuestions.First(q => q.IsCurrent && q.IsRobbingAllowed);
-
+        var currentUser = currentGame.CurrentGameUsers.FirstOrDefault(cgu => cgu.UserId == GetUserId())?.User;
+        
         var question = await unitOfWork.Questions.GetByIdAsync(currentQuestion.QuestionId);
 
+        gameFlowDto.Username = currentUser?.Username;
+        
         if (question != default &&
             string.Equals(question.Answer.RemoveAccents(), gameFlowDto.Answer?.RemoveAccents(), StringComparison.CurrentCultureIgnoreCase))
         {
@@ -118,7 +128,7 @@ public class GameFlowService(
         }
         else if (question != default)
         {
-            await serviceUtil.UpdateGameFlow(gameFlowDto, GameEventType.QuestionRobbingIsAllowed);
+            await serviceUtil.UpdateGameFlow(gameFlowDto, GameEventType.QuestionAnsweredWrong);
         }
     }
 
@@ -126,21 +136,19 @@ public class GameFlowService(
     {
         var currentGame = await serviceUtil.GetAndValidateCurrentGame(GameEventType.PlayerLeft, gameFlowDto, GetUserId());
         var playerToRemove = currentGame.CurrentGameUsers.First(u => u.UserId == gameFlowDto.UserId);
-
-        // Check if the leaving player is the current turn player
+        
         var wasCurrentPlayer = playerToRemove.IsCurrent;
-
+        
         await unitOfWork.CurrentGameUsers.RemoveAsync(playerToRemove);
         await unitOfWork.CompleteAsync();
-
-        // If the leaving player was the current turn player, select the next player
+        
         if (wasCurrentPlayer && currentGame.CurrentGameUsers.Count > 1)
         {
-            // Refresh the current game to get updated user list without the removed player
             currentGame = await serviceUtil.GetAndValidateCurrentGame(GameEventType.PlayerLeft, gameFlowDto, GetUserId());
             await serviceUtil.SelectNextPlayer(currentGame);
         }
 
+        gameFlowDto.Username = playerToRemove.User.Username;
         await serviceUtil.UpdateGameFlow(gameFlowDto, GameEventType.PlayerLeft);
     }
 
@@ -157,7 +165,9 @@ public class GameFlowService(
         var currentGame = await serviceUtil.GetAndValidateCurrentGame(GameEventType.NextPlayerSelected, gameFlowDto, GetUserId());
         if (currentGame.CurrentGameUsers.Count > 1)
         {
-            await serviceUtil.SelectNextPlayer(currentGame);
+            currentGame = await serviceUtil.SelectNextPlayer(currentGame);
+            var currentUser = currentGame.CurrentGameUsers.FirstOrDefault(u => u.IsCurrent)?.User;
+            gameFlowDto.Username = currentUser?.Username;
             await serviceUtil.UpdateGameFlow(gameFlowDto, GameEventType.NextPlayerSelected);
         }
     }

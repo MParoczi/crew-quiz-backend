@@ -8,6 +8,7 @@ namespace Backend.Models.DTOs;
 public class GameFlowDto
 {
     public long? UserId { get; set; }
+    public string? Username { get; set; }
     public required string SessionId { get; set; }
     public long? QuestionId { get; set; }
     public string? Answer { get; set; }
