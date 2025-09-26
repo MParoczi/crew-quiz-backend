@@ -35,15 +35,15 @@ public class GameFlowController(IServiceDispatcher serviceDispatcher) : Controll
     }
 
     [HttpPost]
-    public async Task<ActionResult> SubmitAnswer(GameFlowDto gameFlowDto)
+    public async Task<ActionResult<bool>> SubmitAnswer(GameFlowDto gameFlowDto)
     {
         var semaphore = SessionSemaphores.GetOrAdd(gameFlowDto.SessionId, _ => new SemaphoreSlim(1, 1));
 
         await semaphore.WaitAsync();
         try
         {
-            await serviceDispatcher.For<IGameFlowService>().DispatchAsync(s => s.SubmitAnswer(gameFlowDto));
-            return Ok();
+            var result = await serviceDispatcher.For<IGameFlowService>().DispatchAsync(s => s.SubmitAnswer(gameFlowDto));
+            return Ok(result);
         }
         finally
         {
@@ -54,15 +54,15 @@ public class GameFlowController(IServiceDispatcher serviceDispatcher) : Controll
     }
 
     [HttpPost]
-    public async Task<ActionResult> RobQuestion(GameFlowDto gameFlowDto)
+    public async Task<ActionResult<bool>> RobQuestion(GameFlowDto gameFlowDto)
     {
         var semaphore = SessionSemaphores.GetOrAdd(gameFlowDto.SessionId, _ => new SemaphoreSlim(1, 1));
 
         await semaphore.WaitAsync();
         try
         {
-            await serviceDispatcher.For<IGameFlowService>().DispatchAsync(s => s.RobQuestion(gameFlowDto));
-            return Ok();
+            var result = await serviceDispatcher.For<IGameFlowService>().DispatchAsync(s => s.RobQuestion(gameFlowDto));
+            return Ok(result);
         }
         finally
         {
