@@ -61,7 +61,7 @@ public class GameFlowService(
         await serviceUtil.UpdateGameFlow(gameFlowDto, GameEventType.QuestionSelected);
     }
 
-    public async Task SubmitAnswer(GameFlowDto gameFlowDto)
+    public async Task<bool> SubmitAnswer(GameFlowDto gameFlowDto)
     {
         var currentGame = await serviceUtil.GetAndValidateCurrentGame(GameEventType.AnswerSubmitted, gameFlowDto, GetUserId());
         var currentQuestion = currentGame.CurrentGameQuestions.First(q => q.IsCurrent);
@@ -91,16 +91,27 @@ public class GameFlowService(
             {
                 await serviceUtil.UpdateGameFlow(gameFlowDto, GameEventType.QuestionAnswered);
             }
+
+            return true;
         }
-        else if (question != default)
+
+        if (question != default)
         {
-            await serviceUtil.SetQuestionRobbingAllowed(currentGame, currentQuestion);
-            await serviceUtil.UpdateGameFlow(gameFlowDto, GameEventType.QuestionAnsweredWrong);
-            await serviceUtil.UpdateGameFlow(gameFlowDto, GameEventType.QuestionRobbingIsAllowed);
+            if (!currentQuestion.IsRobbingAllowed)
+            {
+                await serviceUtil.SetQuestionRobbingAllowed(currentGame, currentQuestion);
+                await serviceUtil.UpdateGameFlow(gameFlowDto, GameEventType.QuestionRobbingIsAllowed);
+            }
+            else
+            {
+                await serviceUtil.UpdateGameFlow(gameFlowDto, GameEventType.QuestionAnsweredWrong);   
+            }
         }
+
+        return false;
     }
 
-    public async Task RobQuestion(GameFlowDto gameFlowDto)
+    public async Task<bool> RobQuestion(GameFlowDto gameFlowDto)
     {
         var currentGame = await serviceUtil.GetAndValidateCurrentGame(GameEventType.AnswerSubmitted, gameFlowDto, GetUserId());
         var currentQuestion = currentGame.CurrentGameQuestions.First(q => q.IsCurrent && q.IsRobbingAllowed);
@@ -117,6 +128,8 @@ public class GameFlowService(
             currentGame = await serviceUtil.SelectNextPlayer(currentGame);
 
             var isLastQuestion = serviceUtil.CheckIfLastQuestion(currentGame);
+            
+            gameFlowDto.Answer = currentQuestion.Question.Answer;
 
             if (isLastQuestion)
             {
@@ -127,11 +140,16 @@ public class GameFlowService(
             {
                 await serviceUtil.UpdateGameFlow(gameFlowDto, GameEventType.QuestionRobbed);
             }
+
+            return true;
         }
-        else if (question != default)
+
+        if (question != default)
         {
             await serviceUtil.UpdateGameFlow(gameFlowDto, GameEventType.QuestionAnsweredWrong);
         }
+
+        return false;
     }
 
     public async Task LeaveGame(GameFlowDto gameFlowDto)
