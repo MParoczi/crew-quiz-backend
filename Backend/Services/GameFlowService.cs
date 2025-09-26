@@ -79,6 +79,8 @@ public class GameFlowService(
             currentGame = await serviceUtil.SelectNextPlayer(currentGame);
 
             var isLastQuestion = serviceUtil.CheckIfLastQuestion(currentGame);
+            
+            gameFlowDto.Answer = currentQuestion.Question.Answer;
 
             if (isLastQuestion)
             {
